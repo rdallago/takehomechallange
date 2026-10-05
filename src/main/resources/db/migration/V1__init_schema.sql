@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS health_check (
+    id BIGSERIAL PRIMARY KEY,
+    status VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO health_check (status) VALUES ('SYSTEM_OK');
