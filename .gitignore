@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+*.log
+# Archivos temporales de documentación
+Nuevo Documento de Microsoft Word.docx

@@ -1,0 +1,55 @@
+version: 2.1
+
+orbs:
+  coveralls: coveralls/coveralls@2.2.5   # verificar la ultima version en circleci.com/developer/orbs
+
+jobs:
+  build-and-test:
+    docker:
+      # Contenedor principal: Java 17
+      - image: cimg/openjdk:17.0
+        environment:
+          TEST_DB_URL: jdbc:postgresql://localhost:5432/takehome_test_db
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: root
+      # Contenedor secundario: Postgres efimero solo para este job
+      - image: cimg/postgres:15.8
+        environment:
+          POSTGRES_DB: takehome_test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: root
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - m2-{{ checksum "pom.xml" }}
+            - m2-
+      - run:
+          name: Esperar a Postgres
+          command: |
+            for i in $(seq 1 30); do
+              (echo > /dev/tcp/localhost/5432) 2>/dev/null && exit 0
+              sleep 2
+            done
+            echo "Postgres no levanto" && exit 1
+      - run:
+          name: Tests + cobertura
+          command: |
+            chmod +x mvnw
+            ./mvnw -B clean test
+      - save_cache:
+          key: m2-{{ checksum "pom.xml" }}
+          paths:
+            - ~/.m2
+      - store_test_results:
+          path: target/surefire-reports
+      - store_artifacts:
+          path: target/site/jacoco
+      - coveralls/upload:
+          coverage_file: target/site/jacoco/jacoco.xml
+          coverage_format: jacoco
+
+workflows:
+  main:
+    jobs:
+      - build-and-test

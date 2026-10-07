@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres-db:
     image: postgres:15-alpine
@@ -9,10 +7,17 @@ services:
       POSTGRES_DB: takehome_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
+      JWT_SECRET: ${JWT_SECRET:-secret-local-docker-bastante-largo-0123456789}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d takehome_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   app:
     build: .
@@ -20,7 +25,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres-db
+      postgres-db:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/takehome_db
       SPRING_DATASOURCE_USERNAME: postgres
