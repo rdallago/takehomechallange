@@ -278,4 +278,24 @@ class NotificationFlowTest extends IntegrationTestBase {
 
         assertEquals(1, count("SELECT count(*) FROM notifications"));
     }
+
+        // ---------- CORS ----------
+
+    @Test
+    void preflightFromAllowedOriginIsAccepted() throws Exception {
+        mockMvc.perform(options("/api/notifications")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "authorization,content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    void preflightFromUnknownOriginIsRejected() throws Exception {
+        mockMvc.perform(options("/api/notifications")
+                        .header("Origin", "http://sitio-malicioso.com")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
+    }
 }
